@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>태국어 학습장</title>
+<style>
+:root{
+  --bg:#f5f5f7; --card:#fff; --text:#111; --muted:#6e6e73; --line:#e5e5ea;
+  --accent:#111; --soft:#f0f0f2; --ok:#dff7e7; --warn:#fff2cf; --bad:#ffe1e1;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+.app{max-width:760px;margin:0 auto;padding:18px 14px 90px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+h1{font-size:28px;margin:0}
+.sub{color:var(--muted);font-size:14px;margin-top:4px}
+.card{background:var(--card);border-radius:20px;padding:18px;margin:12px 0;box-shadow:0 1px 8px rgba(0,0,0,.05)}
+.pill{display:inline-block;background:var(--soft);padding:6px 10px;border-radius:999px;font-size:12px;margin-bottom:10px}
+.ko{font-size:20px;font-weight:700;line-height:1.4}
+.th{font-size:24px;line-height:1.55;margin-top:10px}
+.pron{font-size:15px;color:var(--muted);margin-top:8px}
+.note{font-size:13px;color:var(--muted);margin-top:8px}
+.actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px}
+button{border:0;border-radius:14px;padding:12px;font-size:14px;font-weight:700}
+.know{background:var(--ok)} .maybe{background:var(--warn)} .no{background:var(--bad)}
+.tabs{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-top:1px solid var(--line);display:flex;justify-content:center}
+.tabs .inner{width:100%;max-width:760px;display:grid;grid-template-columns:repeat(4,1fr)}
+.tab{background:none;padding:14px 6px;color:var(--muted)}
+.tab.active{color:var(--text)}
+.hidden{display:none}
+.search{width:100%;padding:14px 16px;border:1px solid var(--line);border-radius:14px;font-size:16px;background:white}
+.row{padding:14px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.small{font-size:13px;color:var(--muted)}
+.statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:var(--soft);border-radius:16px;padding:14px;text-align:center}
+.stat b{display:block;font-size:22px}
+.quiz-answer{margin-top:12px}
+.primary{background:#111;color:#fff;width:100%;margin-top:10px}
+.sectiontitle{font-size:18px;font-weight:800;margin:20px 0 8px}
+@media (max-width:480px){.th{font-size:22px}.ko{font-size:18px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div>
+      <h1>태국어 학습장</h1>
+      <div class="sub" id="todayLabel"></div>
+    </div>
+  </div>
+
+  <section id="todayView">
+    <div class="card">
+      <div class="sectiontitle" style="margin-top:0">오늘의 학습</div>
+      <div class="small">실제로 자주 쓰는 표현 3개</div>
+    </div>
+    <div id="todayCards"></div>
+    <div class="card">
+      <div class="sectiontitle" style="margin-top:0">오늘의 단어 5개</div>
+      <div id="todayVocab"></div>
+    </div>
+  </section>
+
+  <section id="reviewView" class="hidden">
+    <div class="card">
+      <div class="sectiontitle" style="margin-top:0">복습</div>
+      <div class="small">한국어를 보고 태국어를 먼저 떠올려보세요.</div>
+    </div>
+    <div id="reviewCards"></div>
+  </section>
+
+  <section id="libraryView" class="hidden">
+    <input id="searchBox" class="search" placeholder="예: 해동, 확인, 스케줄">
+    <div class="card">
+      <div class="sectiontitle" style="margin-top:0">내 표현</div>
+      <div id="libraryList"></div>
+    </div>
+  </section>
+
+  <section id="statsView" class="hidden">
+    <div class="card">
+      <div class="sectiontitle" style="margin-top:0">학습 상태</div>
+      <div class="statgrid">
+        <div class="stat"><b id="knowCount">0</b><span>알고 있음</span></div>
+        <div class="stat"><b id="maybeCount">0</b><span>헷갈림</span></div>
+        <div class="stat"><b id="noCount">0</b><span>모름</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sectiontitle" style="margin-top:0">사용 원칙</div>
+      <div class="row">자주 번역 요청하는 표현 → 더 자주 등장</div>
+      <div class="row">익숙해진 표현 → 복습 간격 증가</div>
+      <div class="row">가끔 옛 표현 회상 테스트</div>
+    </div>
+  </section>
+</div>
+
+<nav class="tabs">
+  <div class="inner">
+    <button class="tab active" data-view="todayView">오늘</button>
+    <button class="tab" data-view="reviewView">복습</button>
+    <button class="tab" data-view="libraryView">검색</button>
+    <button class="tab" data-view="statsView">기록</button>
+  </div>
+</nav>
+
+<script>
+let DATA={sentences:[],vocab:[]};
+const state=JSON.parse(localStorage.getItem("thaiStudyState")||"{}");
+
+function saveState(){localStorage.setItem("thaiStudyState",JSON.stringify(state))}
+function setStatus(id,status){
+  state[id]={...(state[id]||{}),status,last:new Date().toISOString()};
+  saveState(); renderAll();
+}
+function statusOf(id){return state[id]?.status||"unseen"}
+
+function sentenceCard(s){
+  return `<div class="card">
+    <div class="pill">${s.category}</div>
+    <div class="ko">${s.ko}</div>
+    <div class="th">${s.th}</div>
+    <div class="pron">${s.pron}</div>
+    <div class="note">${s.note||""}</div>
+    <div class="actions">
+      <button class="know" onclick="setStatus(${s.id},'know')">알고 있음</button>
+      <button class="maybe" onclick="setStatus(${s.id},'maybe')">헷갈림</button>
+      <button class="no" onclick="setStatus(${s.id},'no')">모름</button>
+    </div>
+  </div>`;
+}
+function dailyPick(arr,n){
+  const d=new Date(); const seed=d.getFullYear()*1000+(d.getMonth()+1)*40+d.getDate();
+  return [...arr].sort((a,b)=>((a.id*31+seed)%97)-((b.id*31+seed)%97)).slice(0,n);
+}
+function renderToday(){
+  const picks=dailyPick(DATA.sentences,3);
+  document.getElementById("todayCards").innerHTML=picks.map(sentenceCard).join("");
+  document.getElementById("todayVocab").innerHTML=dailyPick(DATA.vocab.map((v,i)=>({...v,id:1000+i})),5)
+    .map(v=>`<div class="row"><b>${v.ko}</b><div class="th" style="font-size:20px">${v.th}</div><div class="pron">${v.pron}</div></div>`).join("");
+}
+function renderReview(){
+  const ordered=[...DATA.sentences].sort((a,b)=>{
+    const score=x=>statusOf(x.id)==='no'?0:statusOf(x.id)==='maybe'?1:statusOf(x.id)==='unseen'?2:3;
+    return score(a)-score(b)
+  });
+  document.getElementById("reviewCards").innerHTML=ordered.slice(0,5).map(s=>`
+    <div class="card">
+      <div class="pill">${s.category}</div>
+      <div class="ko">${s.ko}</div>
+      <details class="quiz-answer"><summary>정답 보기</summary>
+        <div class="th">${s.th}</div><div class="pron">${s.pron}</div>
+      </details>
+      <div class="actions">
+        <button class="know" onclick="setStatus(${s.id},'know')">맞음</button>
+        <button class="maybe" onclick="setStatus(${s.id},'maybe')">애매</button>
+        <button class="no" onclick="setStatus(${s.id},'no')">틀림</button>
+      </div>
+    </div>`).join("");
+}
+function renderLibrary(q=""){
+  q=q.trim().toLowerCase();
+  const rows=DATA.sentences.filter(s=>[s.ko,s.th,s.pron,s.category,s.note].join(" ").toLowerCase().includes(q));
+  document.getElementById("libraryList").innerHTML=rows.map(s=>`
+    <div class="row">
+      <div class="small">${s.category}</div>
+      <b>${s.ko}</b>
+      <div>${s.th}</div>
+      <div class="small">${s.pron}</div>
+    </div>`).join("") || `<div class="small">검색 결과가 없습니다.</div>`;
+}
+function renderStats(){
+  const vals=Object.values(state).map(x=>x.status);
+  document.getElementById("knowCount").textContent=vals.filter(x=>x==="know").length;
+  document.getElementById("maybeCount").textContent=vals.filter(x=>x==="maybe").length;
+  document.getElementById("noCount").textContent=vals.filter(x=>x==="no").length;
+}
+function renderAll(){renderToday();renderReview();renderLibrary(document.getElementById("searchBox")?.value||"");renderStats()}
+document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>{
+  document.querySelectorAll("section").forEach(s=>s.classList.add("hidden"));
+  document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
+  document.getElementById(btn.dataset.view).classList.remove("hidden");
+  btn.classList.add("active");
+}));
+document.getElementById("searchBox").addEventListener("input",e=>renderLibrary(e.target.value));
+document.getElementById("todayLabel").textContent=new Date().toLocaleDateString("ko-KR",{year:"numeric",month:"long",day:"numeric",weekday:"short"});
+fetch("data.json").then(r=>r.json()).then(d=>{DATA=d;renderAll()});
+if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js")}
+</script>
+</body>
+</html>
